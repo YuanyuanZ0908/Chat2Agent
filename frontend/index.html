@@ -1,122 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CellChat Chatbot</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f6f8fa;
-      padding: 2rem;
+      background-color: #f6f8fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .chatBot {
+      width: 500px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background-color: #007bff;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
     }
     .chatbox {
-      max-width: 800px;
-      margin: auto;
-      background: white;
-      border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      list-style: none;
+      padding: 1rem;
+      height: 300px;
+      overflow-y: auto;
+      margin: 0;
     }
-    .section {
-      margin-bottom: 1.5rem;
-    }
-    label {
-      font-weight: bold;
-    }
-    input[type=text], select {
-      width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.25rem;
+    .chatbox .chat {
       margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
     }
-    textarea {
-      width: 100%;
-      height: 120px;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .output-box {
-      border: 1px solid #ccc;
+    .chat-incoming p {
+      background-color: #e9ecef;
       padding: 0.75rem;
-      background: #fefefe;
-      min-height: 100px;
-      white-space: pre-wrap;
+      border-radius: 5px;
+      margin: 0;
+      max-width: 90%;
     }
-    button {
-      padding: 0.6rem 1.2rem;
-      background: #007bff;
+    .chat-outgoing p {
+      background-color: #007bff;
+      color: white;
+      padding: 0.75rem;
+      border-radius: 5px;
+      margin: 0;
+      max-width: 90%;
+      margin-left: auto;
+    }
+    .chat-input {
+      display: flex;
+      padding: 1rem;
+      border-top: 1px solid #ccc;
+    }
+    .chat-input textarea {
+      flex: 1;
+      resize: none;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .chat-input button {
+      margin-left: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: #007bff;
+      color: white;
       border: none;
       border-radius: 4px;
-      color: white;
       cursor: pointer;
     }
-    button:disabled {
-      background: #aaa;
+    .input-section {
+      padding: 0 1rem 1rem;
+    }
+    .input-section input, .input-section select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
   </style>
 </head>
+
 <body>
-  <div class="chatbox">
-    <h2>🧠 CellChat Interactive Chatbot</h2>
+  <div class="chatBot">
+    <header>
+      <h2>CellChat Chatbot</h2>
+      <span id="cross" onclick="cancel()">X</span>
+    </header>
 
-    <div class="section">
-      <label for="apiKey">🔑 Enter GROQ API Key:</label>
-      <input type="text" id="apiKey" placeholder="Paste your GROQ_API_KEY here...">
-    </div>
-
-    <div class="section">
-      <label for="apiModel">🧠 Select Model:</label>
+    <div class="input-section">
+      <input type="text" id="apiKey" placeholder="🔑 Enter GROQ API Key...">
       <select id="apiModel">
         <option value="llama3-70b-8192">Groq - LLaMA3-70B</option>
         <option value="other-model">Other Model</option>
       </select>
     </div>
 
-    <div class="section">
-      <label for="userPrompt">📝 Enter Your Prompt:</label>
-      <textarea id="userPrompt" placeholder="e.g., Perform a full CellChat analysis on my dataset. The input file is 'data_input.csv' and metadata file is 'meta.csv'."></textarea>
-      <button onclick="sendMessage()">Run Analysis</button>
-    </div>
+    <ul class="chatbox" id="chatbox">
+      <li class="chat-incoming chat">
+        <p>Hey! How can I assist you today?</p>
+      </li>
+    </ul>
 
-    <div class="section">
-      <label>📤 Output:</label>
-      <div class="output-box" id="outputBox">Waiting for response...</div>
+    <div class="chat-input">
+      <textarea id="userPrompt" rows="1" placeholder="Enter your message..."></textarea>
+      <button id="sendBTN">Send</button>
     </div>
   </div>
 
   <script>
-    async function sendMessage() {
-      const apiKey = document.getElementById("apiKey").value;
+    const chatbox = document.getElementById("chatbox");
+    const sendBtn = document.getElementById("sendBTN");
+
+    sendBtn.addEventListener("click", async () => {
+      const prompt = document.getElementById("userPrompt").value.trim();
+      const apiKey = document.getElementById("apiKey").value.trim();
       const model = document.getElementById("apiModel").value;
-      const prompt = document.getElementById("userPrompt").value;
+      if (!prompt) return;
 
-      if (!apiKey || !prompt) {
-        alert("Please provide both API Key and prompt.");
-        return;
-      }
+      const userMessage = document.createElement("li");
+      userMessage.className = "chat-outgoing chat";
+      userMessage.innerHTML = `<p>${prompt}</p>`;
+      chatbox.appendChild(userMessage);
+      document.getElementById("userPrompt").value = "";
+      chatbox.scrollTop = chatbox.scrollHeight;
 
-      document.getElementById("outputBox").textContent = "⏳ Sending request to backend...";
+      const botMessage = document.createElement("li");
+      botMessage.className = "chat-incoming chat";
+      botMessage.innerHTML = `<p>⏳ Processing your request...</p>`;
+      chatbox.appendChild(botMessage);
+      chatbox.scrollTop = chatbox.scrollHeight;
 
       try {
         const response = await fetch("http://localhost:8000/api/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: prompt, model: model })
         });
 
         const data = await response.json();
-        document.getElementById("outputBox").textContent = data.reply;
+        botMessage.innerHTML = `<p>${data.reply}</p>`;
+        chatbox.scrollTop = chatbox.scrollHeight;
       } catch (error) {
-        document.getElementById("outputBox").textContent = "❌ Error: " + error.message;
+        botMessage.innerHTML = `<p>❌ Error: ${error.message}</p>`;
       }
+    });
+
+    function cancel() {
+      document.querySelector(".chatBot").style.display = "none";
     }
   </script>
 </body>
+
 </html>
