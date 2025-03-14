@@ -11,70 +11,111 @@
       padding: 2rem;
     }
     .chatbox {
-      max-width: 700px;
+      max-width: 800px;
       margin: auto;
       background: white;
       border-radius: 10px;
-      padding: 1rem;
+      padding: 1.5rem;
       box-shadow: 0 0 12px rgba(0,0,0,0.1);
     }
-    .messages {
-      height: 400px;
-      overflow-y: auto;
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
+    .section {
+      margin-bottom: 1.5rem;
     }
-    .message { margin: 0.5rem 0; }
-    .user { text-align: right; font-weight: bold; }
-    .bot { text-align: left; color: #444; }
-    .controls { display: flex; gap: 0.5rem; }
-    input[type=text] { flex: 1; padding: 0.5rem; }
-    select { padding: 0.5rem; }
-    button { padding: 0.5rem 1rem; }
+    label {
+      font-weight: bold;
+    }
+    input[type=text], select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .output-box {
+      border: 1px solid #ccc;
+      padding: 0.75rem;
+      background: #fefefe;
+      min-height: 100px;
+      white-space: pre-wrap;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      background: #007bff;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #aaa;
+    }
   </style>
 </head>
 <body>
   <div class="chatbox">
-    <h2>🧠 CellChat Agent Chatbot</h2>
-    <div class="messages" id="messages"></div>
+    <h2>🧠 CellChat Interactive Chatbot</h2>
 
-    <div class="controls">
-      <input type="text" id="userPrompt" placeholder="Enter your prompt here..." />
+    <div class="section">
+      <label for="apiKey">🔑 Enter GROQ API Key:</label>
+      <input type="text" id="apiKey" placeholder="Paste your GROQ_API_KEY here...">
+    </div>
+
+    <div class="section">
+      <label for="apiModel">🧠 Select Model:</label>
       <select id="apiModel">
         <option value="llama3-70b-8192">Groq - LLaMA3-70B</option>
+        <option value="other-model">Other Model</option>
       </select>
-      <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div class="section">
+      <label for="userPrompt">📝 Enter Your Prompt:</label>
+      <textarea id="userPrompt" placeholder="e.g., Perform a full CellChat analysis on my dataset. The input file is 'data_input.csv' and metadata file is 'meta.csv'."></textarea>
+      <button onclick="sendMessage()">Run Analysis</button>
+    </div>
+
+    <div class="section">
+      <label>📤 Output:</label>
+      <div class="output-box" id="outputBox">Waiting for response...</div>
     </div>
   </div>
 
   <script>
-    const messagesDiv = document.getElementById("messages");
-
-    function appendMessage(sender, text) {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-      msg.innerText = `${sender === 'user' ? 'You' : 'Bot'}: ${text}`;
-      messagesDiv.appendChild(msg);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
     async function sendMessage() {
-      const prompt = document.getElementById("userPrompt").value;
+      const apiKey = document.getElementById("apiKey").value;
       const model = document.getElementById("apiModel").value;
-      if (!prompt) return;
+      const prompt = document.getElementById("userPrompt").value;
 
-      appendMessage("user", prompt);
-      document.getElementById("userPrompt").value = "";
+      if (!apiKey || !prompt) {
+        alert("Please provide both API Key and prompt.");
+        return;
+      }
 
-      const response = await fetch("http://localhost:8000/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, model })
-      });
+      document.getElementById("outputBox").textContent = "⏳ Sending request to backend...";
 
-      const data = await response.json();
-      appendMessage("bot", data.reply);
+      try {
+        const response = await fetch("http://localhost:8000/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ prompt: prompt, model: model })
+        });
+
+        const data = await response.json();
+        document.getElementById("outputBox").textContent = data.reply;
+      } catch (error) {
+        document.getElementById("outputBox").textContent = "❌ Error: " + error.message;
+      }
     }
   </script>
 </body>
